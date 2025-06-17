@@ -1,35 +1,23 @@
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
-const { Socket } = require('dgram');
-
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
 
-// Serve HTML file
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname + '/public'));
 
-// Handle socket connections
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+  console.log('User connected');
 
   socket.on('message', (msg) => {
-
-    // Respond to sender
-    socket.emit('serverResponse', `${msg}`);
-
-    // Broadcast to others
-    socket.broadcast.emit('message', ` ${socket.id.slice(0, 4)} : ${msg}`);
+    socket.emit('serverResponse', msg); // To sender
+    socket.broadcast.emit('message', msg); // To others
   });
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+  socket.on('image', (imgData) => {
+    io.emit('image', imgData); // Broadcast to everyone including sender
   });
 });
 
-
-server.listen(3000, () => {
-  console.log('Server listening on http://localhost:3000');
+http.listen(3000, () => {
+  console.log('Server started on http://localhost:3000');
 });
